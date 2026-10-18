@@ -1,1 +1,26 @@
-LyogU2tpbGxSaXNlIEFjYWRlbXkgc2VydmljZSB3b3JrZXIg4oCUIGNhY2hlLWZpcnN0IGZvciBvZmZsaW5lIHVzZSAqLwpjb25zdCBDQUNIRSA9ICdza2lsbHJpc2UtdjEnOwpjb25zdCBDT1JFID0gWwogICcuLycsICcuL2luZGV4Lmh0bWwnLCAnLi9jb3Vyc2VzLmh0bWwnLCAnLi9jb3Vyc2UuaHRtbCcsCiAgJy4vYWRtaXNzaW9uLmh0bWwnLCAnLi9sb2dpbi5odG1sJywgJy4vZmFxLmh0bWwnLAogICcuL2NvbnRhY3QuaHRtbCcsICcuL3ByaXZhY3kuaHRtbCcsICcuL21hbmlmZXN0Lmpzb24nLAogICcuL2Fzc2V0cy9jc3Mvc3R5bGUuY3NzJywgJy4vYXNzZXRzL2pzL2RhdGEuanMnLCAnLi9hc3NldHMvanMvc2l0ZS5qcycsCiAgJy4vYXNzZXRzL2ltZy9pY29uLTE5Mi5wbmcnLCAnLi9hc3NldHMvaW1nL2ljb24tNTEyLnBuZycsCiAgJy4vYXNzZXRzL2ltZy9oZXJvLmpwZycKXTsKc2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgZSA9PiB7CiAgZS53YWl0VW50aWwoY2FjaGVzLm9wZW4oQ0FDSEUpLnRoZW4oYyA9PiBjLmFkZEFsbChDT1JFKSkudGhlbigoKSA9PiBzZWxmLnNraXBXYWl0aW5nKCkpKTsKfSk7CnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignYWN0aXZhdGUnLCBlID0+IHsKICBlLndhaXRVbnRpbChjYWNoZXMua2V5cygpLnRoZW4oa3MgPT4gUHJvbWlzZS5hbGwoa3MuZmlsdGVyKGsgPT4gayAhPT0gQ0FDSEUpLm1hcChrID0+IGNhY2hlcy5kZWxldGUoaykpKSkudGhlbigoKSA9PiBzZWxmLmNsaWVudHMuY2xhaW0oKSkpOwp9KTsKc2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIGUgPT4gewogIGlmIChlLnJlcXVlc3QubWV0aG9kICE9PSAnR0VUJyB8fCAhZS5yZXF1ZXN0LnVybC5zdGFydHNXaXRoKHNlbGYubG9jYXRpb24ub3JpZ2luKSkgcmV0dXJuOwogIGUucmVzcG9uZFdpdGgoCiAgICBjYWNoZXMubWF0Y2goZS5yZXF1ZXN0KS50aGVuKGhpdCA9PiBoaXQgfHwgZmV0Y2goZS5yZXF1ZXN0KS50aGVuKHJlcyA9PiB7CiAgICAgIGNvbnN0IGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgY2FjaGVzLm9wZW4oQ0FDSEUpLnRoZW4oYyA9PiBjLnB1dChlLnJlcXVlc3QsIGNvcHkpKTsKICAgICAgcmV0dXJuIHJlczsKICAgIH0pLmNhdGNoKCgpID0+IGNhY2hlcy5tYXRjaCgnLi9pbmRleC5odG1sJykpKQogICk7Cn0pOwo=
+/* SkillRise Academy service worker — cache-first for offline use */
+const CACHE = 'skillrise-v1';
+const CORE = [
+  './', './index.html', './courses.html', './course.html',
+  './admission.html', './login.html', './faq.html',
+  './contact.html', './privacy.html', './manifest.json',
+  './assets/css/style.css', './assets/js/data.js', './assets/js/site.js',
+  './assets/img/icon-192.png', './assets/img/icon-512.png',
+  './assets/img/hero.jpg'
+];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
+  e.respondWith(
+    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy));
+      return res;
+    }).catch(() => caches.match('./index.html')))
+  );
+});
